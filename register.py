@@ -21,12 +21,46 @@ from cryptography.hazmat.primitives import serialization
 from curl_cffi import requests as curl_requests
 
 # ================= 加载配置 =================
+def _env_str(name: str, default: str = "", *, keep_empty: bool = False) -> str:
+    v = os.getenv(name)
+    if v is None:
+        return default
+    v = v.strip()
+    if v == "" and not keep_empty:
+        return default
+    return v
+def _env_int(name: str, default: int, *, min_value: int | None = None, max_value: int | None = None) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        value = default
+    else:
+        try:
+            value = int(raw.strip())
+        except ValueError:
+            raise ValueError(f"环境变量 {name} 必须是整数，当前值: {raw!r}")
+    if min_value is not None and value < min_value:
+        raise ValueError(f"环境变量 {name} 不能小于 {min_value}，当前值: {value}")
+    if max_value is not None and value > max_value:
+        raise ValueError(f"环境变量 {name} 不能大于 {max_value}，当前值: {value}")
+    return value
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    s = raw.strip().lower()
+    if s in ("1", "true", "yes", "y", "on"):
+        return True
+    if s in ("0", "false", "no", "n", "off"):
+        return False
+    raise ValueError(f"环境变量 {name} 必须是布尔值(true/false/1/0)，当前值: {raw!r}")
 def _load_config():
     """仅从环境变量加载配置，不再读取 config.json"""
     # 代理配置逻辑
-    use_proxy_str = os.environ.get("USE_PROXY", "false").strip().lower()
-    use_proxy = use_proxy_str in ("true", "1", "yes")
-    proxy_addr = os.environ.get("PROXY", "").strip()
+    # use_proxy_str = os.environ.get("USE_PROXY", "false").strip().lower()
+    # use_proxy = use_proxy_str in ("true", "1", "yes")
+    # proxy_addr = os.environ.get("PROXY", "").strip()
+    use_proxy = _env_bool("USE_PROXY", False)
+    proxy_addr = _env_str("PROXY", "")
     
     # 【代理逻辑纠错】如果启用代理但未配置地址，自动禁用
     if use_proxy and not len(proxy_addr) >  8:  # 简单判断地址有效性
@@ -39,20 +73,20 @@ def _load_config():
         use_proxy = True
 
     config = {
-        "total_accounts": int(os.environ.get("TOTAL_ACCOUNTS", "10")),
-        "max_workers": int(os.environ.get("MAX_WORKERS", "5")),
+        "total_accounts": _env_int("TOTAL_ACCOUNTS", 10, min_value=1),
+        "max_workers": _env_int("MAX_WORKERS", 5, min_value=1),
         "proxy": proxy_addr if use_proxy else "",
-        "output_file": os.environ.get("OUTPUT_FILE", "registered_accounts.txt"),
-        "enable_oauth": os.environ.get("ENABLE_OAUTH", "true").lower() == "true",
-        "oauth_required": os.environ.get("OAUTH_REQUIRED", "true").lower() == "true",
-        "oauth_issuer": os.environ.get("OAUTH_ISSUER", "https://auth.openai.com"),
-        "oauth_client_id": os.environ.get("OAUTH_CLIENT_ID", "app_EMoamEEZ73f0CkXaXp7hrann"),
-        "oauth_redirect_uri": os.environ.get("OAUTH_REDIRECT_URI", "http://localhost:1455/auth/callback"),
-        "ak_file": os.environ.get("AK_FILE", "ak.txt"),
-        "rk_file": os.environ.get("RK_FILE", "rk.txt"),
-        "token_json_dir": os.environ.get("TOKEN_JSON_DIR", "codex_tokens"),
-        "upload_api_url": os.environ.get("UPLOAD_API_URL", ""),
-        "upload_api_token": os.environ.get("UPLOAD_API_TOKEN", ""),
+        "output_file": _env_str("OUTPUT_FILE", "registered_accounts.txt"),
+        "enable_oauth": _env_bool("ENABLE_OAUTH", True),
+        "oauth_required": _env_bool("OAUTH_REQUIRED", True),
+        "oauth_issuer": _env_str("OAUTH_ISSUER", "https://auth.openai.com"),
+        "oauth_client_id": _env_str("OAUTH_CLIENT_ID", "app_EMoamEEZ73f0CkXaXp7hrann"),
+        "oauth_redirect_uri": _env_str("OAUTH_REDIRECT_URI", "http://localhost:1455/auth/callback"),
+        "ak_file": _env_str("AK_FILE", "ak.txt"),
+        "rk_file": _env_str("RK_FILE", "rk.txt"),
+        "token_json_dir": _env_str("TOKEN_JSON_DIR", "codex_tokens"),
+        "upload_api_url": _env_str("UPLOAD_API_URL", ""),     # 可选
+        "upload_api_token": _env_str("UPLOAD_API_TOKEN", ""), # 可选
     }
     return config
   
