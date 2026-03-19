@@ -23,9 +23,6 @@ jobs:
           pip install -r requirements.txt
       - name: Run Register Script
         env:
-          # 核心配置
-          DUCKMAIL_BEARER: ${{ secrets.DUCKMAIL_BEARER }}
-          DUCKMAIL_API_BASE: ${{ secrets.DUCKMAIL_API_BASE }}
           
           # 代理配置 (自动纠错逻辑在 Python 脚本中)
           USE_PROXY: ${{ secrets.USE_PROXY }}  # true 或 false
