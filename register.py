@@ -1585,44 +1585,35 @@ def run_batch(total_accounts: int = 3, output_file="registered_accounts.txt",
 
 
 def main():
-    print("=" * 60)
-    print("批量自动注册工具 (KeiID 临时邮箱版)")
-    print("=" * 60)
-
-    # 交互式代理配置
+    # 不再使用 input()，完全依赖环境变量
     proxy = DEFAULT_PROXY
-    if proxy:
-        print(f"[Info] 检测到默认代理: {proxy}")
-        use_default = input("使用此代理? (Y/n): ").strip().lower()
-        if use_default == "n":
-            proxy = input("输入代理地址 (留空=不使用代理): ").strip() or None
-    else:
-        env_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") \
-                 or os.environ.get("ALL_PROXY") or os.environ.get("all_proxy")
+    total_accounts = DEFAULT_TOTAL_ACCOUNTS
+    max_workers = MAX_WORKERS
+
+    # 额外检查系统环境变量中的代理（作为备选）
+    if not proxy:
+        env_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
         if env_proxy:
-            print(f"[Info] 检测到环境变量代理: {env_proxy}")
-            use_env = input("使用此代理? (Y/n): ").strip().lower()
-            if use_env == "n":
-                proxy = input("输入代理地址 (留空=不使用代理): ").strip() or None
-            else:
-                proxy = env_proxy
-        else:
-            proxy = input("输入代理地址 (如 http://127.0.0.1:7890，留空=不使用代理): ").strip() or None
+            # 如果脚本层面的 USE_PROXY 为 false，但系统环境变量有代理，这里可以选择是否启用
+            # 为了严格遵循 USE_PROXY 逻辑，此处仅打印提示，不自动启用，除非修改 _load_config
+            print(f"[Info] 检测到系统环境变量代理，但 USE_PROXY 未启用，将不使用代理")
 
-    if proxy:
-        print(f"[Info] 使用代理: {proxy}")
-    else:
-        print("[Info] 不使用代理")
+    print(f"[Info] 使用代理：{proxy if proxy else '无'} ")
+    print(f"[Info] 注册数量：{total_accounts} ")
+    print(f"[Info] 并发数：{max_workers} ")
 
-    # 输入注册数量
-    count_input = input(f"\n注册账号数量 (默认 {DEFAULT_TOTAL_ACCOUNTS}): ").strip()
-    total_accounts = int(count_input) if count_input.isdigit() and int(count_input) > 0 else DEFAULT_TOTAL_ACCOUNTS
-
-    workers_input = input("并发数 (默认 3): ").strip()
-    max_workers = int(workers_input) if workers_input.isdigit() and int(workers_input) > 0 else DEFAULT_MAX_WORKERS
-
+    # 运行批量注册
     run_batch(total_accounts=total_accounts, output_file=DEFAULT_OUTPUT_FILE,
               max_workers=max_workers, proxy=proxy)
+    
+    # 【安全调整】任务结束后清理 ak.txt 和 rk.txt (可选)
+    # 如果不需要保留本地文本记录，可以取消以下注释
+    for f in [AK_FILE, RK_FILE]:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+                print(f"[Security] 已删除 {f}")
+            except: pass
 
 
 if __name__ == "__main__":
