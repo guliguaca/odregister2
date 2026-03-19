@@ -2,7 +2,7 @@ name: Auto Register
 on:
   workflow_dispatch:  # 允许手动触发
   schedule:
-    - cron: '0 0 * * 0'  # 0代表星期日。如果你想改在星期一，就写 '0 0 * * 1'
+    - cron: '0 0 * * *'  # 0代表星期日。如果你想改在星期一，就写 '0 0 * * 1'
 jobs:
   run-registration:
     runs-on: ubuntu-latest
