@@ -1588,7 +1588,7 @@ def main():
     # 不再使用 input()，完全依赖环境变量
     proxy = DEFAULT_PROXY
     total_accounts = DEFAULT_TOTAL_ACCOUNTS
-    max_workers = MAX_WORKERS
+    max_workers = DEFAULT_MAX_WORKERS
 
     # 额外检查系统环境变量中的代理（作为备选）
     if not proxy:
