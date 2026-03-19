@@ -1,0 +1,54 @@
+name: Auto Register
+on:
+  workflow_dispatch:  # 允许手动触发
+  schedule:
+    - cron: '0 0 * * 0'  # 0代表星期日。如果你想改在星期一，就写 '0 0 * * 1'
+jobs:
+  run-registration:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 授予 GitHub Actions 推送代码的权限
+    env: # 强制启用 Node.js 24 来消除警告（可选）
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # 使用稳定的 Python 版本
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run Register Script
+        env:
+          # 核心配置
+          DUCKMAIL_BEARER: ${{ secrets.DUCKMAIL_BEARER }}
+          DUCKMAIL_API_BASE: ${{ secrets.DUCKMAIL_API_BASE }}
+          
+          # 代理配置 (自动纠错逻辑在 Python 脚本中)
+          USE_PROXY: ${{ secrets.USE_PROXY }}  # true 或 false
+          PROXY: ${{ secrets.PROXY }}          # 代理地址，如 http://user:pass@ip:port
+          
+          # 任务配置
+          TOTAL_ACCOUNTS: ${{ secrets.TOTAL_ACCOUNTS }}
+          MAX_WORKERS: ${{ secrets.MAX_WORKERS }}
+          
+          # OAuth 配置
+          ENABLE_OAUTH: ${{ secrets.ENABLE_OAUTH }}
+          OAUTH_REQUIRED: ${{ secrets.OAUTH_REQUIRED }}
+          
+          # CPA 上传配置
+          UPLOAD_API_URL: ${{ secrets.UPLOAD_API_URL }}
+          UPLOAD_API_TOKEN: ${{ secrets.UPLOAD_API_TOKEN }}
+          TOKEN_JSON_DIR: ${{ secrets.TOKEN_JSON_DIR }}
+          
+        run: python register.py
+      - name: Upload Results (Optional)
+        uses: actions/upload-artifact@v4  # ✅ 升级到 v4
+        if: always()
+        with:
+          name: registered-accounts
+          path: registered_accounts.txt
+          retention-days: 1
