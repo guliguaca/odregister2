@@ -1603,7 +1603,7 @@ def main():
     print(f"[Info] 并发数：{max_workers} ")
 
     # 运行批量注册
-    run_batch(total_accounts=total_accounts, output_file=os.path.join(TOKEN_JSON_DIR, DEFAULT_OUTPUT_FILE),
+    run_batch(total_accounts=total_accounts, output_file=DEFAULT_OUTPUT_FILE,
               max_workers=max_workers, proxy=proxy)
     
     # 【安全调整】任务结束后清理 ak.txt 和 rk.txt (可选)
